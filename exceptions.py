@@ -12,3 +12,7 @@ class RequestExceptionError(Exception):
 
 class JSONDecoderError(Exception):
     """Ошибка с Json файлом"""
+
+
+class BotEmptyError(Exception):
+    """Пустой список"""
