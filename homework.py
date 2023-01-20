@@ -27,7 +27,6 @@ RETRY_PERIOD = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
-
 HOMEWORK_VERDICTS = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
     'reviewing': 'Работа взята на проверку ревьюером.',
@@ -74,7 +73,7 @@ def get_api_answer(timestamp):
         status_code = homework.status_code
         if status_code != HTTPStatus.OK:
             message_error = (f'API {ENDPOINT} недоступен, '
-                            f'код ошибки {status_code}')
+                             f'код ошибки {status_code}')
             raise TheAnswerIsNot200Error(message_error)
     except requests.exceptions.RequestException as error_request:
         message_error = f'Ошибка в запросе API: {error_request}'
@@ -82,7 +81,6 @@ def get_api_answer(timestamp):
     except json.JSONDecodeError as json_error:
         message_error = f'Ошибка json: {json_error}'
         raise JSONDecoderError(message_error) from json_error
-    
     return homework.json()
 
 
