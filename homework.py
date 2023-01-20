@@ -71,17 +71,18 @@ def get_api_answer(timestamp):
             headers=HEADERS,
             params=params
         )
+        status_code = homework.status_code
+        if status_code != HTTPStatus.OK:
+            message_error = (f'API {ENDPOINT} недоступен, '
+                            f'код ошибки {status_code}')
+            raise TheAnswerIsNot200Error(message_error)
     except requests.exceptions.RequestException as error_request:
         message_error = f'Ошибка в запросе API: {error_request}'
         raise RequestExceptionError(message_error)
     except json.JSONDecodeError as json_error:
         message_error = f'Ошибка json: {json_error}'
         raise JSONDecoderError(message_error) from json_error
-    status_code = homework.status_code
-    if status_code != HTTPStatus.OK:
-        message_error = (f'API {ENDPOINT} недоступен, '
-                         f'код ошибки {status_code}')
-        raise TheAnswerIsNot200Error(message_error)
+    
     return homework.json()
 
 
@@ -93,13 +94,12 @@ def check_response(response):
     if 'homeworks' not in response or 'current_date' not in response:
         raise KeyError(
             f'Ключ "homeworks" или "current_date" не найден в {response}')
-    key = response['homeworks']
-    if not isinstance(key, list):
+    if not isinstance(response['homeworks'], list):
         raise TypeError('В ключе "homeworks" нет списка')
-    last_homework = key[0]
-    homework = {'status': last_homework['status'],
-                'homework_name': last_homework["homework_name"]}
-    return homework
+    ret = response['homeworks']
+    if not ret:
+        raise ValueError('Нет работ на указанное время')
+    return ret[0]
 
 
 def parse_status(homework):
@@ -120,25 +120,26 @@ def main():
         logging.critical(message)
         sys.exit(message)
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    timestamp: int = 0
     start_message = 'Бот начал работу'
     send_message(bot, start_message)
     logging.info(start_message)
-    message_error_last = ''
+    prev_message = ''
 
     while True:
         try:
-            response = get_api_answer(timestamp)
-            homeworks = check_response(response)
-            message = parse_status(homeworks)
-            send_message(bot, message)
+            response = get_api_answer(0)
+            homework = check_response(response)
+            message = parse_status(homework)
+            if message != prev_message:
+                send_message(bot, message)
+                prev_message = message
 
         except Exception as error:
-            message_error = f'Сбой в работе программы: {error}'
-            logging.error(message_error, exc_info=True)
-            if message != message_error_last:
-                send_message(bot, message_error)
-                message_error_last = message_error
+            message = f'Сбой в работе программы: {error}'
+            logging.error(message, exc_info=True)
+            if message != prev_message:
+                send_message(bot, message)
+                prev_message = message
 
         finally:
             time.sleep(RETRY_PERIOD)
