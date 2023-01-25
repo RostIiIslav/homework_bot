@@ -78,9 +78,6 @@ def get_api_answer(timestamp):
     except requests.exceptions.RequestException as error_request:
         message_error = f'Ошибка в запросе API: {error_request}'
         raise RequestExceptionError(message_error)
-    except json.JSONDecodeError as json_error:
-        message_error = f'Ошибка json: {json_error}'
-        raise JSONDecoderError(message_error) from json_error
     return homework.json()
 
 
@@ -95,8 +92,8 @@ def check_response(response):
     if not isinstance(response['homeworks'], list):
         raise TypeError('В ключе "homeworks" нет списка')
     ret = response['homeworks']
-    if not ret:
-        raise ValueError('Нет работ на указанное время')
+    if len(ret) == 0:
+        return{}
     return ret[0]
 
 
@@ -117,6 +114,7 @@ def main():
         message = 'Отсутствует токен. Бот остановлен!'
         logging.critical(message)
         sys.exit(message)
+    timestamp = int(time.time())
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     start_message = 'Бот начал работу'
     send_message(bot, start_message)
@@ -125,12 +123,12 @@ def main():
 
     while True:
         try:
-            response = get_api_answer(0)
+            response = get_api_answer(timestamp)
+            timestamp = response['current_date']
             homework = check_response(response)
             message = parse_status(homework)
-            if message != prev_message:
-                send_message(bot, message)
-                prev_message = message
+            send_message(bot, message)
+            prev_message = ''
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
