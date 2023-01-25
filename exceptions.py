@@ -10,9 +10,5 @@ class RequestExceptionError(Exception):
     """Ошибка запроса."""
 
 
-class JSONDecoderError(Exception):
-    """Ошибка с Json файлом"""
-
-
 class BotEmptyError(Exception):
     """Пустой список"""

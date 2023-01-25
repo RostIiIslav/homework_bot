@@ -1,4 +1,3 @@
-import json
 import logging
 import time
 from dotenv import load_dotenv
@@ -14,7 +13,6 @@ from exceptions import (
     TheAnswerIsNot200Error,
     UndocumentedStatusError,
     RequestExceptionError,
-    JSONDecoderError
 )
 
 load_dotenv()
