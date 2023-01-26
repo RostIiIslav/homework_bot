@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from dotenv import load_dotenv
@@ -13,6 +14,7 @@ from exceptions import (
     TheAnswerIsNot200Error,
     UndocumentedStatusError,
     RequestExceptionError,
+    JSONDecoderError
 )
 
 load_dotenv()
@@ -68,15 +70,18 @@ def get_api_answer(timestamp):
             headers=HEADERS,
             params=params
         )
-        status_code = homework.status_code
-        if status_code != HTTPStatus.OK:
-            message_error = (f'API {ENDPOINT} недоступен, '
-                             f'код ошибки {status_code}')
-            raise TheAnswerIsNot200Error(message_error)
-    except requests.exceptions.RequestException as error_request:
+    except requests.exceptions.RequestException as error_request: 
         message_error = f'Ошибка в запросе API: {error_request}'
         raise RequestExceptionError(message_error)
-    return homework.json()
+    status_code = homework.status_code
+    if status_code != HTTPStatus.OK:
+        message_error = (f'API {ENDPOINT} недоступен, '
+                         f'код ошибки {status_code}')
+        raise TheAnswerIsNot200Error(message_error)
+    try:    
+        return homework.json()
+    except json.JSONDecodeError as error:
+        raise JSONDecoderError(error)
 
 
 def check_response(response):
@@ -91,7 +96,7 @@ def check_response(response):
         raise TypeError('В ключе "homeworks" нет списка')
     ret = response['homeworks']
     if len(ret) == 0:
-        return{}
+        return ""
     return ret[0]
 
 
@@ -122,11 +127,12 @@ def main():
     while True:
         try:
             response = get_api_answer(timestamp)
-            timestamp = response['current_date']
             homework = check_response(response)
-            message = parse_status(homework)
-            send_message(bot, message)
-            prev_message = ''
+            if homework:
+                message = parse_status(homework)
+                send_message(bot, message)
+                prev_message = ''
+            timestamp = response.get("current_date", timestamp)
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
