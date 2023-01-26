@@ -70,7 +70,7 @@ def get_api_answer(timestamp):
             headers=HEADERS,
             params=params
         )
-    except requests.exceptions.RequestException as error_request: 
+    except requests.exceptions.RequestException as error_request:
         message_error = f'Ошибка в запросе API: {error_request}'
         raise RequestExceptionError(message_error)
     status_code = homework.status_code
@@ -78,7 +78,7 @@ def get_api_answer(timestamp):
         message_error = (f'API {ENDPOINT} недоступен, '
                          f'код ошибки {status_code}')
         raise TheAnswerIsNot200Error(message_error)
-    try:    
+    try:
         return homework.json()
     except json.JSONDecodeError as error:
         raise JSONDecoderError(error)
